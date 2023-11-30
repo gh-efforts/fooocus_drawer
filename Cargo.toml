@@ -1,0 +1,15 @@
+[package]
+name = "fooocus_drawer"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+image = "0.24"
+show-image = { git = "https://github.com/robohouse-delft/show-image-rs.git", features = ["image"], default-features = false }
+anyhow = "1"
+notify = "6"
+ureq = { version = "2", default-features = false, features = ["tls", "json"] }
+base64 = "0.21"
+serde = { version = "1", features = ["derive"] }
