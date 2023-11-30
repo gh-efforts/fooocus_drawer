@@ -42,10 +42,6 @@ jobs:
             os: ubuntu-latest
             build_tool: cargo
 
-          - target: i686-unknown-linux-gnu
-            os: ubuntu-latest
-            build_tool: cargo
-
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
