@@ -38,11 +38,11 @@ jobs:
             build_tool: cargo
 
           # linux
-          - target: x86_64-unknown-linux-musl
+          - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             build_tool: cargo
 
-          - target: i686-unknown-linux-musl
+          - target: i686-unknown-linux-gnu
             os: ubuntu-latest
             build_tool: cargo
 
