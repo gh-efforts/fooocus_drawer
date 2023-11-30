@@ -6,7 +6,7 @@ use base64::Engine;
 use base64::engine::general_purpose;
 use clap::Parser;
 use image::{DynamicImage, ImageFormat};
-use notify::{Event, EventKind, RecursiveMode, Watcher};
+use notify::{EventKind, RecursiveMode, Watcher};
 use serde::Deserialize;
 use show_image::create_window;
 use ureq::Agent;
@@ -59,38 +59,40 @@ enum FileChangeMS {
 }
 
 fn process(
-    watch_img: &'static Path,
-    client: &'static Agent,
-    api: &'static str,
+    watch_img: &Path,
+    client: &Agent,
+    api: &str,
 ) -> Result<()> {
     let window = create_window("image", Default::default())?;
-    let window = &*Box::leak(Box::new(window));
-    let ms = Box::leak(Box::new(FileChangeMS::Init));
+    let mut ms = FileChangeMS::Init;
 
-    let mut watcher = notify::recommended_watcher(move |res: notify::Result<Event>| {
-        let e = res.unwrap();
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    let mut watcher = notify::recommended_watcher(tx)?;
+    watcher.watch(watch_img, RecursiveMode::NonRecursive)?;
+
+    loop {
+        let e = rx.recv()??;
+
         println!("event: {:?}, ms: {:?}", e.kind, ms);
 
         match e.kind {
             EventKind::Modify(_) => {
                 match ms {
-                    FileChangeMS::Init => *ms = FileChangeMS::Modify,
+                    FileChangeMS::Init => ms = FileChangeMS::Modify,
                     FileChangeMS::Modify => {
-                        *ms = FileChangeMS::Init;
+                        ms = FileChangeMS::Init;
                         println!("image prompt");
                         std::thread::sleep(Duration::from_millis(100));
-                        let img = image_prompt(watch_img, client, api).unwrap();
-                        window.set_image("image-001", img).unwrap();
+
+                        let img = image_prompt(watch_img, client, api)?;
+                        window.set_image("image-001", img)?;
                     }
                 }
             }
             _ => ()
         }
-    })?;
-
-    watcher.watch(watch_img, RecursiveMode::NonRecursive)?;
-    std::thread::park();
-    Ok(())
+    }
 }
 
 #[derive(Parser)]
@@ -102,11 +104,11 @@ struct Args {
 
 fn main() {
     let args: Args = Args::parse();
-    let img = Box::leak(Box::new(args.image));
-    let client = Box::leak(Box::new(Agent::new()));
-    let api = Box::leak(Box::new(args.fooocus_api));
 
     show_image::run_context(|| {
-        process(img, client, api).unwrap();
+        let img = args.image;
+        let client = Agent::new();
+        let api = args.fooocus_api;
+        process(&img, &client, &api).unwrap();
     });
 }
